@@ -1,0 +1,149 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id              String      @id @default(cuid())
+  email           String      @unique
+  passwordHash    String      @map("password_hash")
+  fullName        String      @map("full_name")
+  phoneNumber     String?     @map("phone_number")
+  role            String      @default("ASSOCIATION")
+  isActive        Boolean     @default(true) @map("is_active")
+  lastLogin       DateTime?   @map("last_login")
+
+  association     Association?
+  grantRequests   GrantRequest[]
+  documents       Document[]
+  auditLogs       AuditLog[]
+  notifications   Notification[]
+
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+model Association {
+  id                String      @id @default(cuid())
+  userId            String      @unique @map("user_id")
+  user              User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name              String
+  licenseNumber     String      @unique @map("license_number")
+  registrationNumber String     @unique @map("registration_number")
+  address           String
+  city              String
+  region            String
+  phoneNumber       String      @map("phone_number")
+  email             String
+  websiteUrl        String?     @map("website_url")
+  businessDescription String?   @map("business_description")
+  logoUrl           String?     @map("logo_url")
+
+  isVerified        Boolean     @default(false) @map("is_verified")
+  verificationDate  DateTime?   @map("verification_date")
+
+  grantRequests     GrantRequest[]
+
+  createdAt         DateTime    @default(now()) @map("created_at")
+  updatedAt         DateTime    @updatedAt @map("updated_at")
+
+  @@map("associations")
+}
+
+model GrantRequest {
+  id                String      @id @default(cuid())
+  associationId     String      @map("association_id")
+  association       Association @relation(fields: [associationId], references: [id], onDelete: Cascade)
+
+  requestNumber     String      @unique @map("request_number")
+  title             String
+  description       String
+  projectObjectives String?     @map("project_objectives")
+
+  requestedAmount   Float       @map("requested_amount")
+  currency          String      @default("SAR")
+  projectDurationMonths Int     @map("project_duration_months")
+
+  status            String      @default("DRAFT")
+
+  reviewedBy        String?     @map("reviewed_by")
+  reviewedAt        DateTime?   @map("reviewed_at")
+  rejectionReason   String?     @map("rejection_reason")
+
+  documents         Document[]
+
+  createdAt         DateTime    @default(now()) @map("created_at")
+  updatedAt         DateTime    @updatedAt @map("updated_at")
+
+  @@map("grant_requests")
+}
+
+model Document {
+  id                String      @id @default(cuid())
+  grantRequestId    String      @map("grant_request_id")
+  grantRequest      GrantRequest @relation(fields: [grantRequestId], references: [id], onDelete: Cascade)
+
+  userId            String      @map("user_id")
+  user              User        @relation(fields: [userId], references: [id])
+
+  fileName          String      @map("file_name")
+  originalName      String      @map("original_name")
+  fileType          String      @map("file_type")
+  fileSize          Int         @map("file_size")
+  fileUrl           String      @map("file_url")
+
+  documentType      String      @map("document_type")
+  isVerified        Boolean     @default(false) @map("is_verified")
+
+  createdAt         DateTime    @default(now()) @map("created_at")
+  updatedAt         DateTime    @updatedAt @map("updated_at")
+
+  @@map("documents")
+}
+
+model AuditLog {
+  id                String      @id @default(cuid())
+  userId            String?     @map("user_id")
+  user              User?       @relation(fields: [userId], references: [id])
+
+  action            String
+  entityType        String?     @map("entity_type")
+  entityId          String?     @map("entity_id")
+
+  details           Json?
+  ipAddress         String?     @map("ip_address")
+  userAgent         String?     @map("user_agent")
+
+  status            String      @default("SUCCESS")
+  errorMessage      String?     @map("error_message")
+
+  createdAt         DateTime    @default(now()) @map("created_at")
+
+  @@map("audit_logs")
+}
+
+model Notification {
+  id                String      @id @default(cuid())
+  userId            String      @map("user_id")
+  user              User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title             String
+  message           String
+  notificationType  String      @map("notification_type")
+  relatedEntityType String?     @map("related_entity_type")
+  relatedEntityId   String?     @map("related_entity_id")
+
+  isRead            Boolean     @default(false) @map("is_read")
+  readAt            DateTime?   @map("read_at")
+
+  createdAt         DateTime    @default(now()) @map("created_at")
+
+  @@map("notifications")
+}

@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: dama-postgres
+    environment:
+      POSTGRES_USER: dama_user
+      POSTGRES_PASSWORD: dama_secure_password_2024
+      POSTGRES_DB: dama_grants_db
+      TZ: 'Asia/Riyadh'
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init-db.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - dama-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dama_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: dama-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@dama.local
+      PGADMIN_DEFAULT_PASSWORD: admin123
+    ports:
+      - "5050:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - dama-network
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  dama-network:
+    driver: bridge
